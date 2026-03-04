@@ -7,8 +7,13 @@ import {
   streamText,
   type UIMessage,
 } from 'ai';
+import { ollama } from 'ai-sdk-ollama';
 import { z } from 'zod';
 import { searchEmails } from './search.ts';
+
+const model = ollama('gpt-oss:20b', {
+  think: 'low',
+});
 
 export const POST = async (req: Request): Promise<Response> => {
   const body: { messages: UIMessage[] } = await req.json();
@@ -20,9 +25,12 @@ export const POST = async (req: Request): Promise<Response> => {
       // addition to the keywords. This will be used for semantic search, which will be a
       // big improvement over passing the entire conversation history.
       const keywords = await generateObject({
-        model: google('gemini-2.5-flash'),
+        model,
         system: `You are a helpful email assistant, able to search emails for information.
           Your job is to generate a list of keywords which will be used to search the emails.
+          Additionally, suggest a search query, which can be used for a more semantic search algorithm. The query
+          can bet a bit more general than the keywords, because it will be used with embeddings rather than keyword
+          matching.
         `,
         schema: z.object({
           keywords: z
@@ -30,15 +38,17 @@ export const POST = async (req: Request): Promise<Response> => {
             .describe(
               'A list of keywords to search the emails with. Use these for exact terminology.',
             ),
+          searchQuery: z.string().describe('A search query to search emails in a semantic context, which will be' +
+            ' used for embeddings')
         }),
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
       });
 
       console.dir(keywords.object, { depth: null });
 
       const searchResults = await searchEmails({
         keywordsForBM25: keywords.object.keywords,
-        embeddingsQuery: TODO,
+        embeddingsQuery: keywords.object.searchQuery,
       });
 
       const topSearchResults = searchResults.slice(0, 5);
@@ -69,14 +79,14 @@ export const POST = async (req: Request): Promise<Response> => {
       ].join('\n\n');
 
       const answer = streamText({
-        model: google('gemini-2.5-flash'),
+        model,
         system: `You are a helpful email assistant that answers questions based on email content.
           You should use the provided emails to answer questions accurately.
           ALWAYS cite sources using markdown formatting with the email subject as the source.
           Be concise but thorough in your explanations.
         `,
         messages: [
-          ...convertToModelMessages(messages),
+          ...await convertToModelMessages(messages),
           {
             role: 'user',
             content: emailSnippets,

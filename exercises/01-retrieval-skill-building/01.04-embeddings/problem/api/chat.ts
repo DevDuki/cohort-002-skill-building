@@ -6,7 +6,13 @@ import {
   streamText,
   type UIMessage,
 } from 'ai';
+import { ollama } from 'ai-sdk-ollama';
 import { searchEmails } from './create-embeddings.ts';
+
+const model = ollama('gpt-oss:20b', {
+  think: 'low',
+});
+//const model = google('gemini-2.0-flash-lite');
 
 const formatMessageHistory = (messages: UIMessage[]) => {
   return messages
@@ -32,10 +38,17 @@ export const POST = async (req: Request): Promise<Response> => {
     execute: async ({ writer }) => {
       // TODO: call the searchEmails function with the
       // conversation history to get the search results
-      const searchResults = TODO;
+      const searchResults = await searchEmails(formatMessageHistory(messages));
+
+      console.log('results', searchResults);
 
       // TODO: take the top X search results
-      const topSearchResults = TODO;
+      const topSearchResults = searchResults.slice(0, 10);
+
+      console.log('searchResults', searchResults.map(result => `
+        score: ${result.score}
+        email: ${result.email.subject}
+      `));
 
       const emailSnippets = [
         '## Emails',
@@ -61,14 +74,14 @@ export const POST = async (req: Request): Promise<Response> => {
       ].join('\n\n');
 
       const answer = streamText({
-        model: google('gemini-2.5-flash'),
+        model,
         system: `You are a helpful email assistant that answers questions based on email content.
           You should use the provided emails to answer questions accurately.
           ALWAYS cite sources using markdown formatting with the email subject as the source.
           Be concise but thorough in your explanations.
         `,
         messages: [
-          ...convertToModelMessages(messages),
+          ...(await convertToModelMessages(messages)),
           {
             role: 'user',
             content: emailSnippets,

@@ -3,9 +3,16 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  generateText,
+  Output,
   streamText,
   type UIMessage,
 } from 'ai';
+import { ollama } from 'ai-sdk-ollama';
+import { z } from 'zod';
+import { searchEmails } from './bm25.ts';
+
+export const model = ollama('mixtral');
 
 const KEYWORD_GENERATOR_SYSTEM_PROMPT = `
   You are a helpful email assistant, able to search through emails for information.
@@ -20,11 +27,22 @@ export const POST = async (req: Request): Promise<Response> => {
     execute: async ({ writer }) => {
       // TODO: Implement a keyword generator that generates a list of keywords
       // based on the conversation history. Use generateObject to do this.
-      const keywords = TODO;
+      const keywords = await generateText({
+        model,
+        system: KEYWORD_GENERATOR_SYSTEM_PROMPT,
+        messages: await convertToModelMessages(messages),
+        output: Output.array({
+          element: z.string().describe('A search keyword based on the conversation history')
+        }),
+      });
+
+      console.log('keywords', keywords.output);
 
       // TODO: Use the searchEmails function to get the top X number of
       // search results based on the keywords
-      const topSearchResults = TODO;
+      const topSearchResults = (await searchEmails(keywords.output)).slice(0, 5);
+
+      console.log('topSearchResults', topSearchResults);
 
       const emailSnippets = [
         '## Email Snippets',
@@ -50,14 +68,14 @@ export const POST = async (req: Request): Promise<Response> => {
       ].join('\n\n');
 
       const answer = streamText({
-        model: google('gemini-2.5-flash'),
+        model,
         system: `You are a helpful email assistant that answers questions based on email content.
           You should use the provided emails to answer questions accurately.
           ALWAYS cite sources using markdown formatting with the email subject as the source.
           Be concise but thorough in your explanations.
         `,
         messages: [
-          ...convertToModelMessages(messages),
+          ...(await convertToModelMessages(messages)),
           {
             role: 'user',
             content: emailSnippets,

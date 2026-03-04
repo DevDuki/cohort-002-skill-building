@@ -1,11 +1,18 @@
-import { google } from '@ai-sdk/google';
 import { cosineSimilarity, embed, embedMany } from 'ai';
+import { ollama } from 'ai-sdk-ollama';
 import { existsSync, mkdirSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
-import { loadEmails, type Email } from './utils.ts';
+import {
+  loadEmails,
+  type Email,
+} from './utils.ts';
 
 export type Embeddings = Record<string, number[]>;
+
+export const myEmbeddingModel = ollama.embeddingModel(
+  'nomic-embed-text',
+);
 
 const getExistingEmbeddingsPath = (cacheKey: string) => {
   return path.resolve(process.cwd(), 'data', `${cacheKey}.json`);
@@ -48,10 +55,6 @@ export const getExistingEmbeddings = async (
     return;
   }
 };
-
-const myEmbeddingModel = google.textEmbeddingModel(
-  'text-embedding-004',
-);
 
 export const embedEmails = async (
   cacheKey: string,

@@ -24,7 +24,7 @@ export const POST = async (req: Request): Promise<Response> => {
         schema: z.object({
           keywords: z.array(z.string()),
         }),
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
       });
 
       const allKeywords = keywords.object.keywords;
@@ -73,7 +73,7 @@ export const POST = async (req: Request): Promise<Response> => {
           Be concise but thorough in your explanations.
         `,
         messages: [
-          ...convertToModelMessages(messages),
+          ...(await convertToModelMessages(messages)),
           {
             role: 'user',
             content: emailSnippets,

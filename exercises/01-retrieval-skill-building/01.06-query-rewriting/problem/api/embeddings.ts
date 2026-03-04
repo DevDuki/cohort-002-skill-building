@@ -1,14 +1,18 @@
-import { google } from '@ai-sdk/google';
 import { cosineSimilarity, embed, embedMany } from 'ai';
+import { ollama } from 'ai-sdk-ollama';
 import { existsSync, mkdirSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { loadEmails, type Email } from './utils.ts';
 
+const myEmbeddingModel = ollama.embeddingModel(
+  'qwen3-embedding'
+);
+
 export type Embeddings = Record<string, number[]>;
 
 const getExistingEmbeddingsPath = (cacheKey: string) => {
-  return path.resolve(process.cwd(), 'data', `${cacheKey}.json`);
+  return path.resolve(process.cwd(), 'data', `${cacheKey}.json`)
 };
 
 const saveEmbeddings = async (
@@ -48,10 +52,6 @@ export const getExistingEmbeddings = async (
     return;
   }
 };
-
-const myEmbeddingModel = google.textEmbeddingModel(
-  'text-embedding-004',
-);
 
 export const embedEmails = async (
   cacheKey: string,
@@ -119,7 +119,7 @@ export const searchEmailsViaEmbeddings = async (
   return scores.sort((a, b) => b.score - a.score);
 };
 
-export const EMBED_CACHE_KEY = 'emails-google';
+export const EMBED_CACHE_KEY = 'emails-gpt';
 
 const embedLotsOfText = async (
   emails: Email[],

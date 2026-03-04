@@ -1,3 +1,4 @@
+import { ollama } from 'ai-sdk-ollama';
 import path from 'path';
 import { readFile } from 'fs/promises';
 
@@ -16,6 +17,13 @@ export type Email = {
   phaseId?: number;
 };
 
+// export const ollama = createOpenAI({
+//   baseURL: 'http://localhost:11434/v1',
+//   apiKey: 'ollama', // required but ignored
+// });
+
+export const model = ollama('mixtral');
+
 export const loadEmails = async () => {
   const EMAILS_LOCATION = path.resolve(
     import.meta.dirname,
@@ -28,7 +36,7 @@ export const loadEmails = async () => {
   return emails;
 };
 
-const RRF_K = 60;
+const RRF_K = 10;
 
 export function reciprocalRankFusion(
   rankings: { email: Email; score: number }[][],

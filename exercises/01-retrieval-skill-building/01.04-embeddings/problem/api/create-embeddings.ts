@@ -1,3 +1,4 @@
+import { ollama } from 'ai-sdk-ollama';
 import path from 'path';
 import { readFile, writeFile } from 'fs/promises';
 import { cosineSimilarity, embed, embedMany } from 'ai';
@@ -18,6 +19,11 @@ export type Email = {
   arcId?: string;
   phaseId?: number;
 };
+
+const myEmbeddingModel = ollama.embeddingModel(
+  'qwen3-embedding',
+);
+// const myEmbeddingModel = google.embeddingModel('gemini-embedding-001');
 
 export const loadEmails = async () => {
   const EMAILS_LOCATION = path.resolve(
@@ -70,10 +76,6 @@ export const getExistingEmbeddings = async (
     return;
   }
 };
-
-const myEmbeddingModel = google.textEmbeddingModel(
-  'text-embedding-004',
-);
 
 export const embedEmails = async (
   cacheKey: string,
@@ -137,11 +139,12 @@ export const searchEmails = async (query: string) => {
       };
     },
   );
+  console.log('scores results amount', scores.length);
 
   return scores.sort((a, b) => b.score - a.score);
 };
 
-export const EMBED_CACHE_KEY = 'emails-google';
+export const EMBED_CACHE_KEY = 'emails-gpt';
 
 const embedLotsOfText = async (
   emails: Email[],
@@ -152,18 +155,34 @@ const embedLotsOfText = async (
   }[]
 > => {
   // TODO: Implement this function by using the embedMany function
-  throw new Error('Not implemented');
+  const result = await embedMany({
+    model: myEmbeddingModel,
+    values: emails.map(
+      (email) => `${email.subject} ${email.body}`,
+    ),
+    maxRetries: 0,
+  });
+
+  return result.embeddings.map((embedding, index) => ({
+    id: emails[index]!.id,
+    embedding,
+  }));
 };
 
 const embedOnePieceOfText = async (
   text: string,
 ): Promise<number[]> => {
-  // TODO: Implement this function by using the embed function
+  const result = await embed({
+    model: myEmbeddingModel,
+    value: text,
+  });
+
+  return result.embedding;
 };
 
 const calculateScore = (
   queryEmbedding: number[],
   embedding: number[],
 ): number => {
-  // TODO: Implement this function by using the cosineSimilarity function
+  return cosineSimilarity(queryEmbedding, embedding);
 };
