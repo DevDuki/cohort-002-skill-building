@@ -7,7 +7,7 @@ import path from 'path';
 
 const splitter = new TokenTextSplitter({
   chunkSize: 500,
-  chunkOverlap: 200,
+  chunkOverlap: 10,
 });
 
 const bookText = readFileSync(

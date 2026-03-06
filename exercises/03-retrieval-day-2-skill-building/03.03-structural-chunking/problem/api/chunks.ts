@@ -9,9 +9,12 @@ const splitter = new RecursiveCharacterTextSplitter({
   separators: [
     // TODO: Add separators for headings (not including h1's)
     '\n## ',
+    '\n### ',
     // TODO: Add separators for code blocks
+    '\n```',
 
     // TODO: Add separators for chapter markers (e.g., "--- CHAPTER ---")
+    '\n--- CHAPTER ---',
 
     '\n\n',
   ],

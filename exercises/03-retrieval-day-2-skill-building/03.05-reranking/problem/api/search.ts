@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { generateObject } from 'ai';
+import { generateObject, generateText, Output } from 'ai';
 import { z } from 'zod';
 import { searchViaBM25 } from './bm25.ts';
 import { searchChunksViaEmbeddings } from './embeddings.ts';
@@ -106,9 +106,34 @@ export const searchChunks = async (opts: {
   // that are genuinely helpful for answering the question.
   // If a chunk is only tangentially related or not relevant,
   // exclude its ID.
-  const rerankedResults = TODO;
+  const rerankedResults = await generateText({
+    model: google('gemini-2.0-flash-lite'),
+    output: Output.array({
+      element: z.number().describe(`The relevant chunk's ID`),
+    }),
+    system: `
+      You are a search result reranker. Your job is to analyze a list of chunks from a TypeScript book and return only the IDs of the most relevant chunks for answering the user's question.
+      
+      Given a list of chunks with their IDs and content, you should:
+      1. Evaluate how relevant each chunk is to the user's search query
+      2. Return only the IDs of the most relevant chunks
+      
+      You should be selective and only include chunks that are genuinely helpful for answering the question. If a chunk is only tangentially related or not relevant, exclude its ID.
+      
+      Return the IDs as a simple array of numbers.
+    `,
+    prompt: `
+      Search query:
+      ${searchQuery}
+    
+      Available chunks:
+      ${chunksWithId}
+    
+      Return only the IDs of the most relevant chunks for the user's search query.
+    `,
+  });
 
-  const approvedChunkIds = rerankedResults.object.resultIds;
+  const approvedChunkIds = rerankedResults.output;
 
   // Create order map from reranker results
   const rerankOrderMap = new Map(
