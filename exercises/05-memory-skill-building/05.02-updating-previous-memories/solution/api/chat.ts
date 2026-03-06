@@ -48,7 +48,7 @@ export const POST = async (req: Request): Promise<Response> => {
         ${memoriesText}
         </memories>
         `,
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
       });
 
       writer.merge(result.toUIMessageStream());
@@ -121,7 +121,7 @@ export const POST = async (req: Request): Promise<Response> => {
         ${memoriesText}
 
         If no memory changes are needed, return empty arrays for all operations.`,
-        messages: convertToModelMessages(allMessages),
+        messages: await convertToModelMessages(allMessages),
       });
 
       const { updates, deletions, additions } =

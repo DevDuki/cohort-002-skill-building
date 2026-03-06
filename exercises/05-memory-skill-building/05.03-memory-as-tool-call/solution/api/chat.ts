@@ -58,7 +58,7 @@ export const POST = async (req: Request): Promise<Response> => {
 
     You can batch multiple conversation turns before calling the tool if appropriate.
     `,
-    messages: convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages),
     tools: {
       manageMemories: tool({
         description:
